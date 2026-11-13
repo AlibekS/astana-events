@@ -1,0 +1,78 @@
+name: Update events & deploy
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # каждые 6 часов (UTC)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: afisha-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Собрать афишу Астаны
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Установить зависимости
+        run: pip install -r scraper/requirements.txt
+
+      - name: Запустить парсер
+        run: python scraper/parse_astana.py
+
+      - name: Закоммитить данные (если изменились)
+        run: |
+          if git diff --quiet -- data/; then
+            echo "Данные не изменились — коммит не нужен."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "data: обновление афиши $(TZ=Asia/Almaty date +'%Y-%m-%d %H:%M')"
+          git pull --rebase --autostash
+          git push
+
+  deploy:
+    name: Опубликовать на GitHub Pages
+    needs: update
+    if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Подготовить сайт
+        run: |
+          mkdir -p _site
+          cp -r index.html assets data .nojekyll _site/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
