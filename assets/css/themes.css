@@ -1,0 +1,74 @@
+/* Дизайн-токены: светлая и тёмная темы.
+   Один акцент (кобальт → индиго) + нейтральная база. */
+:root {
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --accent-1: #3B82F6;
+  --accent-2: #6366F1;
+  --accent: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+  --accent-solid: #4F6BF4;
+  --on-accent: #FFFFFF;
+
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 24px;
+
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --t-fast: 160ms;
+  --t: 280ms;
+}
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F2F5FA;
+  --blob-1: rgba(122, 162, 255, .55);
+  --blob-2: rgba(178, 160, 255, .45);
+  --blob-3: rgba(125, 211, 252, .40);
+
+  --glass: rgba(255, 255, 255, .65);
+  --glass-strong: rgba(255, 255, 255, .82);
+  --glass-soft: rgba(255, 255, 255, .45);
+  --glass-border: rgba(255, 255, 255, .8);
+  --glass-edge: rgba(15, 23, 42, .06);
+  --glass-highlight: rgba(255, 255, 255, .9);
+  --shadow: 0 10px 30px -12px rgba(30, 41, 80, .18), 0 2px 6px -2px rgba(30, 41, 80, .06);
+  --shadow-hover: 0 22px 44px -16px rgba(49, 74, 170, .30), 0 4px 10px -4px rgba(30, 41, 80, .08);
+
+  --text: #0F172A;
+  --text-2: #3E4A5C;
+  --text-3: #556275;
+  --muted: rgba(15, 23, 42, .06);
+  --line: rgba(15, 23, 42, .08);
+  --weekend: #4F52D8;
+  --placeholder-a: #DCE6FB;
+  --placeholder-b: #E7E1FB;
+  --scrim: rgba(15, 23, 42, .32);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #090D16;
+  --blob-1: rgba(37, 78, 190, .42);
+  --blob-2: rgba(76, 58, 170, .34);
+  --blob-3: rgba(14, 116, 144, .26);
+
+  --glass: rgba(22, 30, 46, .58);
+  --glass-strong: rgba(26, 35, 54, .86);
+  --glass-soft: rgba(22, 30, 46, .38);
+  --glass-border: rgba(255, 255, 255, .12);
+  --glass-edge: rgba(255, 255, 255, .04);
+  --glass-highlight: rgba(255, 255, 255, .14);
+  --shadow: 0 12px 32px -14px rgba(0, 0, 0, .7), 0 2px 6px -2px rgba(0, 0, 0, .4);
+  --shadow-hover: 0 24px 48px -16px rgba(30, 64, 175, .45), 0 4px 10px -4px rgba(0, 0, 0, .5);
+
+  --text: #F8FAFC;
+  --text-2: #94A3B8;
+  --text-3: #8391A7;
+  --muted: rgba(255, 255, 255, .05);
+  --line: rgba(255, 255, 255, .08);
+  --weekend: #8B93FF;
+  --placeholder-a: #18233A;
+  --placeholder-b: #221D3D;
+  --scrim: rgba(2, 6, 14, .6);
+}
