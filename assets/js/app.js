@@ -31,6 +31,12 @@ const els = {
   sheet: $('#sheet'),
   sheetBody: $('#sheetBody'),
   theme: $('#themeToggle'),
+  calMini: $('#calMini'),
+  calMiniDate: $('#calMiniDate'),
+  calMiniCount: $('#calMiniCount'),
+  calFold: $('#calFold'),
+  calSentinel: $('#calSentinel'),
+  calSpacer: $('#calSpacer'),
 };
 
 const cal = buildDays(todayIso());
@@ -102,9 +108,11 @@ function renderHeading({ loading = false } = {}) {
   els.dayTitle.innerHTML = rel
     ? `${rel}, <span class="soft">${esc(full)}</span>`
     : `${esc(capitalize(full))}, <span class="soft">${esc(wd)}</span>`;
-  if (loading) { els.eyebrow.textContent = `${capitalize(wd)} · загружаем афишу…`; return; }
+  els.calMiniDate.textContent = rel ? `${rel}, ${full}` : `${capitalize(full)}, ${wd}`;
+  if (loading) { els.eyebrow.textContent = `${capitalize(wd)} · загружаем афишу…`; els.calMiniCount.textContent = ''; return; }
   const n = filterEvents(events, state).length;
   els.eyebrow.textContent = rel ? `${capitalize(wd)} · ${n} ${eventsWord(n)}` : `${n} ${eventsWord(n)} в Астане`;
+  els.calMiniCount.textContent = `· ${n} ${eventsWord(n)}`;
 }
 
 function renderChips() {
@@ -354,7 +362,10 @@ function selectDate(iso, { fromGrid = false } = {}) {
 
 els.days.addEventListener('click', (e) => {
   const b = e.target.closest('.day[data-date]');
-  if (b && !b.disabled) selectDate(b.dataset.date, { fromGrid: state.view === 'grid' });
+  if (!b || b.disabled) return;
+  const fromGrid = state.view === 'grid';
+  selectDate(b.dataset.date, { fromGrid });
+  if (!fromGrid) fold.afterPick();
 });
 els.days.addEventListener('keydown', (e) => {
   const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: state.view === 'grid' ? 7 : 1, ArrowUp: state.view === 'grid' ? -7 : -1 }[e.key];
@@ -374,8 +385,99 @@ function setView(view) {
   els.viewToggleLabel.textContent = view === 'grid' ? 'Лента' : 'Календарь';
   els.viewToggle.setAttribute('aria-label', view === 'grid' ? 'Свернуть в ленту дат' : 'Показать календарь на 3 недели');
   if (view === 'strip') requestAnimationFrame(() => scrollToSelected(els.days, false));
+  fold.update();
 }
 els.viewToggle.addEventListener('click', () => setView(state.view === 'grid' ? 'strip' : 'grid'));
+
+/* ---------------- Телефон: календарь сворачивается при прокрутке ---------------- */
+// Пока лента дат закреплена сверху и человек листает вниз — она сжимается в строку
+// «дата · N событий» со стрелкой. Стрелка/тап разворачивает ленту обратно.
+const fold = (() => {
+  const mq = window.matchMedia('(max-width: 767px)');
+  let stuck = false;
+  let collapsed = false;
+  let lastY = window.scrollY;
+  let expandedAt = null; // позиция, где человек сам развернул ленту
+  let ticking = false;
+
+  const enabled = () => mq.matches && state.view === 'strip';
+
+  function setCollapsed(on) {
+    if (on === collapsed) return;
+    const h0 = els.calbar.offsetHeight;
+    collapsed = on;
+    els.calbar.classList.toggle('calbar--collapsed', on);
+    els.calMini.setAttribute('aria-expanded', String(!on));
+    // Высота в потоке не должна меняться, иначе контент под закреплённой панелью «прыгнет»:
+    // сколько панель потеряла по высоте — столько добавляем распорке под ней (и наоборот).
+    const h1 = els.calbar.offsetHeight;
+    const spacer = parseFloat(els.calSpacer.style.height) || 0;
+    els.calSpacer.style.height = `${Math.max(0, spacer + h0 - h1)}px`;
+    if (!on) scrollToSelected(els.days, false);
+  }
+
+  function setStuck(on) {
+    if (on === stuck) return;
+    stuck = on;
+    els.calbar.classList.toggle('calbar--stuck', on);
+  }
+
+  function reset() {
+    expandedAt = null;
+    setCollapsed(false);
+    setStuck(false);
+    els.calSpacer.style.height = '';
+  }
+
+  function update() {
+    ticking = false;
+    const y = window.scrollY;
+    if (!enabled()) { reset(); lastY = y; return; }
+    const top = els.calSentinel.getBoundingClientRect().top;
+    setStuck(top < 0);
+    if (!stuck) {
+      expandedAt = null;
+      setCollapsed(false);
+    } else if (!collapsed) {
+      if (expandedAt !== null) {
+        expandedAt = Math.min(expandedAt, y);
+        if (y - expandedAt > 80) { expandedAt = null; setCollapsed(true); }
+      } else if (y - lastY > 2 && top < -40) {
+        setCollapsed(true);
+      }
+    }
+    lastY = y;
+  }
+
+  function schedule() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }
+
+  /** Выбрали дату в развёрнутой закреплённой ленте — сворачиваем и показываем начало списка. */
+  function afterPick() {
+    if (!enabled() || !stuck) return;
+    expandedAt = null;
+    setCollapsed(true);
+    const target = window.scrollY + els.results.getBoundingClientRect().top - els.calbar.offsetHeight - 8;
+    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  }
+
+  els.calMini.addEventListener('click', () => {
+    expandedAt = window.scrollY;
+    setCollapsed(false);
+  });
+  els.calFold.addEventListener('click', () => {
+    expandedAt = null;
+    setCollapsed(true);
+  });
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  mq.addEventListener?.('change', schedule);
+
+  return { update: schedule, afterPick };
+})();
 
 els.chips.addEventListener('click', (e) => {
   const b = e.target.closest('[data-cat]');
@@ -466,5 +568,10 @@ async function load() {
     openSheet(hashId);
   }
 }
+
+// Вкладку оставили открытой до следующего дня — «сегодня» и окно дат устарели.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && todayIso() !== cal.today) location.reload();
+});
 
 load();

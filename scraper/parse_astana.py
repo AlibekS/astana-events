@@ -85,7 +85,8 @@ SXODIM_LISTINGS = [
     "events/kino",
     "events/igry",
 ]
-SXODIM_SKIP_CATEGORIES = ("образован", "конференц", "форум", "экскурс", "тур", "курс", "тренинг")
+# Только с начала слова: подстрока "тур" ловила «культура»/«литература», "курс" — «конкурс».
+SXODIM_SKIP_RE = re.compile(r"(?<!\w)(?:образован|конференц|форум|экскурс|туры?(?!\w)|курс|тренинг)", re.I)
 
 # ---------------------------------------------------------------------------
 # Гео-фильтр
@@ -189,7 +190,8 @@ def is_astana(*texts: str | None) -> bool:
 def categorize(title: str, source_category: str = "") -> str:
     t = f" {title.lower()} "
     for cat, words in TITLE_RULES:
-        if any(w in t for w in words):
+        # Совпадение только с начала слова: иначе "рок" ловил «урок», "live" — «olive».
+        if any(re.search(r"(?<!\w)" + re.escape(w), t) for w in words):
             return cat
     sc = source_category.lower()
     for cat, words in SOURCE_CATEGORY_RULES:
@@ -302,12 +304,13 @@ def fetch(client: httpx.Client, url: str, retries: int = 3) -> str | None:
             if r.status_code == 200:
                 return r.text
             if r.status_code in (403, 404, 410):
-                log.debug("HTTP %s %s", r.status_code, url)
+                log.warning("HTTP %s %s", r.status_code, url)
                 return None
             log.debug("HTTP %s %s (attempt %d)", r.status_code, url, attempt)
         except httpx.HTTPError as exc:
             log.debug("%s %s (attempt %d)", type(exc).__name__, url, attempt)
-        time.sleep(1.5 * attempt)
+        if attempt < retries:
+            time.sleep(1.5 * attempt)
     return None
 
 
@@ -340,7 +343,8 @@ def sx_image_variant(url: str | None, size: str) -> str | None:
 def card_dates_out_of_window(info: str, window: Window) -> bool:
     """True, если в карточке ровно одна дата и она точно вне окна (детали не качаем)."""
     found = CARD_DATE_RE.findall(info or "")
-    if len(found) != 1 or "-" in info or "—" in info:
+    # «до 30 декабря», «с 1 ноября» — длительное событие, может идти и в окне: проверим на странице.
+    if len(found) != 1 or re.search(r"[-—–]|(?<!\w)(?:до|с|по|действ\w*)(?!\w)", info, re.I):
         return False
     day, mon = found[0]
     month = next(v for k, v in MONTHS.items() if mon.lower().startswith(k))
@@ -373,7 +377,7 @@ def sx_collect_cards(client: httpx.Client, window: Window, max_pages: int) -> di
                 if href in cards:
                     continue
                 category = clean(card.get("data-category"))
-                if any(w in category.lower() for w in SXODIM_SKIP_CATEGORIES):
+                if SXODIM_SKIP_RE.search(category):
                     continue
                 info = clean(card.select_one(".impression-card-info").get_text(" ") if card.select_one(".impression-card-info") else "")
                 img = card.select_one("img")
@@ -427,7 +431,7 @@ def sx_parse_event(html: str, card: dict, window: Window) -> list[Event]:
         return []
 
     source_cat = card.get("category") or breadcrumb_cat
-    if any(w in source_cat.lower() for w in SXODIM_SKIP_CATEGORIES):
+    if SXODIM_SKIP_RE.search(source_cat):
         return []
     category = categorize(title, source_cat)
 
@@ -563,44 +567,55 @@ def source_ticketon(window: Window, max_pages: int) -> list[Event]:
             return []
         soup = BeautifulSoup(html, "lxml")
         for block in json_ld_blocks(soup):
-            if block.get("@type") not in ("Event", "MusicEvent", "TheaterEvent", "ExhibitionEvent", "ComedyEvent"):
-                continue
-            title = normalize_title(block.get("name") or "")
-            loc = block.get("location") or {}
-            addr = loc.get("address") or {}
-            if isinstance(addr, str):
-                addr = {"streetAddress": addr}
-            street = clean(addr.get("streetAddress"))
-            locality = clean(addr.get("addressLocality"))
-            if locality and not any(w in locality.lower() for w in ASTANA_WORDS):
-                continue
-            if not is_astana(street, title):
-                continue
-            d, t = parse_iso(block.get("startDate"))
-            e, _ = parse_iso(block.get("endDate"))
-            if not d:
-                continue
-            if e and e > d:
-                if not window.overlaps(d, e):
+            try:
+                types = block.get("@type")
+                types = set(types) if isinstance(types, list) else {types}
+                if not types & {"Event", "MusicEvent", "TheaterEvent", "ExhibitionEvent", "ComedyEvent"}:
                     continue
-            elif not window.contains(d):
-                continue
-            offers = block.get("offers") or {}
-            if isinstance(offers, list):
-                offers = offers[0] if offers else {}
-            price = parse_price(str(offers.get("lowPrice") or offers.get("price") or ""))
-            url = urljoin(TICKETON, block.get("url") or "")
-            img = block.get("image")
-            img = img[0] if isinstance(img, list) and img else img
-            events.append(Event(
-                id="tk_" + hashlib.md5(f"{url}{d}{t}".encode()).hexdigest()[:10],
-                title=title, category=categorize(title), date=d.isoformat(),
-                end_date=e.isoformat() if e and e > d else None, time=t,
-                venue=clean(loc.get("name")), address=street,
-                price_from=price, is_free=price == 0, image_url=img, image_large=img,
-                source_url=url, ticket_url=url, source_name="Ticketon",
-                short_description=shorten(block.get("description") or ""),
-            ))
+                title = normalize_title(block.get("name") or "")
+                loc = block.get("location") or {}
+                if isinstance(loc, list):
+                    loc = loc[0] if loc else {}
+                if not isinstance(loc, dict):
+                    loc = {"name": str(loc)}
+                addr = loc.get("address") or {}
+                if isinstance(addr, str):
+                    addr = {"streetAddress": addr}
+                street = clean(addr.get("streetAddress"))
+                locality = clean(addr.get("addressLocality"))
+                if locality and not any(w in locality.lower() for w in ASTANA_WORDS):
+                    continue
+                if not is_astana(street, title):
+                    continue
+                d, t = parse_iso(block.get("startDate"))
+                e, _ = parse_iso(block.get("endDate"))
+                if not d:
+                    continue
+                if e and e > d:
+                    if not window.overlaps(d, e):
+                        continue
+                elif not window.contains(d):
+                    continue
+                offers = block.get("offers") or {}
+                if isinstance(offers, list):
+                    offers = offers[0] if offers else {}
+                price = parse_price(str(offers.get("lowPrice") or offers.get("price") or ""))
+                url = urljoin(TICKETON, block.get("url") or "")
+                img = block.get("image")
+                img = img[0] if isinstance(img, list) and img else img
+                if isinstance(img, dict):
+                    img = img.get("url")
+                events.append(Event(
+                    id="tk_" + hashlib.md5(f"{url}{d}{t}".encode()).hexdigest()[:10],
+                    title=title, category=categorize(title), date=d.isoformat(),
+                    end_date=e.isoformat() if e and e > d else None, time=t,
+                    venue=clean(loc.get("name")), address=street,
+                    price_from=price, is_free=price == 0, image_url=img, image_large=img,
+                    source_url=url, ticket_url=url, source_name="Ticketon",
+                    short_description=shorten(block.get("description") or ""),
+                ))
+            except Exception:  # одна кривая запись не должна валить весь источник
+                log.exception("ticketon: не удалось разобрать запись")
     log.info("ticketon: событий в окне %d", len(events))
     return events
 
@@ -704,7 +719,7 @@ def main() -> int:
         if gh:
             print("::warning::Источники не вернули событий — данные не обновлены")
         return 0
-    prev_in_window = [e for e in previous if (e.get("end_date") or e["date"]) >= window.start.isoformat()]
+    prev_in_window = [e for e in previous if (e.get("end_date") or e.get("date", "")) >= window.start.isoformat()]
     if len(prev_in_window) >= 10 and len(events) < len(prev_in_window) * args.min_ratio:
         log.error("подозрительно мало событий (%d против %d) — events.json не трогаю",
                   len(events), len(prev_in_window))
@@ -718,12 +733,19 @@ def main() -> int:
 
     payload = {"updated_at": now, "city": "Астана", "window": {"start": window.start.isoformat(),
                "end": window.end.isoformat()}, "events": events}
-    events_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    write_atomic(events_path, json.dumps(payload, ensure_ascii=False, indent=1) + "\n")
     meta = {"updated_at": now, "count": len(events), "sources": status,
             "window": payload["window"]}
-    meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    write_atomic(meta_path, json.dumps(meta, ensure_ascii=False, indent=1) + "\n")
     log.info("сохранено событий: %d → %s", len(events), events_path)
     return 0
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """Сначала во временный файл, потом rename — обрыв посреди записи не оставит обрезанный JSON."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, "utf-8")
+    tmp.replace(path)
 
 
 if __name__ == "__main__":

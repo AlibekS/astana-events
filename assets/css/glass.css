@@ -113,7 +113,9 @@ a { color: inherit; }
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
   transition: transform var(--t-fast) var(--ease), box-shadow var(--t) var(--ease), background var(--t) var(--ease), opacity var(--t);
 }
-.day:hover:not(:disabled) { transform: translateY(-2px); box-shadow: inset 0 1px 0 0 var(--glass-highlight), var(--shadow-hover); }
+@media (hover: hover) {
+  .day:hover:not(:disabled) { transform: translateY(-2px); box-shadow: inset 0 1px 0 0 var(--glass-highlight), var(--shadow-hover); }
+}
 .day__dow { font-size: 12px; font-weight: 600; color: var(--text-3); line-height: 1.2; position: relative; }
 .day--weekend .day__dow { color: var(--weekend); }
 .day--weekend .day__dow::after {
@@ -200,7 +202,7 @@ a { color: inherit; }
   box-shadow: inset 0 1px 0 0 var(--glass-highlight);
   transition: transform var(--t-fast) var(--ease), color var(--t-fast);
 }
-.chip:hover { color: var(--text); transform: translateY(-1px); }
+@media (hover: hover) { .chip:hover { color: var(--text); transform: translateY(-1px); } }
 .chip .i { width: 16px; height: 16px; }
 .chip__n { font-size: 12px; font-weight: 700; color: var(--text-3); }
 .chip[aria-pressed="true"] {
@@ -433,7 +435,39 @@ a { color: inherit; }
   .sheet__close { top: 26px; right: 16px; }
   .sheet__content { padding: 18px 10px 8px; }
   .sheet__foot { margin: 0 -8px; border-radius: 0; bottom: 0; padding-left: 18px; padding-right: 18px; }
+
+  /* Закреплённый календарь: кнопка «Календарь» висела над панелью поверх контента — прячем. */
+  .calbar--stuck .calbar__head { visibility: hidden; pointer-events: none; }
+  /* Свёрнутый календарь: одна строка с датой и стрелкой «развернуть». */
+  .calbar--collapsed { padding: 6px 0; }
+  .calbar--collapsed .days { display: none; }
+  .calbar--collapsed .calbar__mini { display: flex; }
+  .calbar--stuck:not(.calbar--collapsed) .calbar__fold { display: grid; }
 }
+
+.calbar-sentinel, .calbar-spacer { height: 0; }
+.calbar__mini, .calbar__fold { display: none; }
+.calbar__mini {
+  width: 100%; height: 40px; align-items: center; gap: 8px; padding: 0 5px 0 14px; border-radius: 999px;
+  border: 1px solid var(--glass-border); background: var(--glass); box-shadow: inset 0 1px 0 0 var(--glass-highlight);
+  font-size: 14px; font-weight: 700; text-align: left; animation: mini-in .22s var(--ease);
+}
+.calbar__mini-date { white-space: nowrap; color: var(--text); }
+.calbar__mini-count { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); font-weight: 600; }
+.calbar__mini-arrow {
+  width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent);
+}
+.calbar__mini-arrow .i { width: 18px; height: 18px; }
+@keyframes mini-in { from { opacity: 0; transform: translateY(-4px); } }
+.calbar__fold {
+  position: absolute; left: 50%; bottom: -33px; width: 52px; height: 24px; margin-left: -26px; padding: 0;
+  place-items: center; border-radius: 0 0 14px 14px; color: var(--text-2);
+  border: 1px solid var(--glass-border); border-top: 0; background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+}
+.calbar__fold::before { content: ""; position: absolute; inset: -10px -8px -12px; } /* шире зона нажатия */
+.calbar__fold .i { width: 16px; height: 16px; transform: rotate(180deg); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

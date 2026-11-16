@@ -60,11 +60,13 @@ export function buildDays(today = todayIso()) {
   return { days, start, end, today };
 }
 
+const escAttr = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 function thumbsHtml(list, total, max, mod) {
   if (!total) return `<span class="stack stack--${mod}"><span class="stack__dot"></span></span>`;
   const imgs = list
     .slice(0, max)
-    .map((ev) => `<img class="stack__img" src="${ev.image_thumb || ev.image_small || ev.image_url || ''}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">`)
+    .map((ev) => `<img class="stack__img" src="${escAttr(ev.image_thumb || ev.image_small || ev.image_url || '')}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">`)
     .join('');
   const more = total > max ? `<span class="stack__more">+${total - max}</span>` : '';
   return `<span class="stack stack--${mod}" aria-hidden="true">${imgs}${more}</span>`;
@@ -118,6 +120,8 @@ export function renderCalendar(root, cal, eventsFor, selected) {
 export function scrollToSelected(root, smooth = true) {
   const el = root.querySelector('.day--selected');
   if (!el || root.scrollWidth <= root.clientWidth) return;
-  const target = el.offsetLeft - root.clientWidth / 2 + el.clientWidth / 2;
+  // offsetLeft считается от offsetParent (.calbar__inner), а не от самой ленты — берём координаты из rect.
+  const pos = el.getBoundingClientRect().left - root.getBoundingClientRect().left + root.scrollLeft;
+  const target = pos - root.clientWidth / 2 + el.offsetWidth / 2;
   root.scrollTo({ left: Math.max(0, target), behavior: smooth ? 'smooth' : 'auto' });
 }
