@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-17T03:02:22+05:00",
+ "updated_at": "2026-11-17T12:55:30+05:00",
  "city": "Астана",
  "window": {
   "start": "2026-11-17",
@@ -891,6 +891,28 @@
    ]
   },
   {
+   "id": "sx_77610",
+   "title": "Гитарный вечер во «Внутри Книги»",
+   "category": "concerts",
+   "category_label": "Концерты и звёзды",
+   "date": "2026-11-22",
+   "end_date": null,
+   "time": "16:00",
+   "venue": "«Внутри Книги»",
+   "address": "ул. Кабанбай Батыра 2/2 (4 этаж)",
+   "price_from": 3500,
+   "price_label": "от 3 500 ₸",
+   "is_free": false,
+   "image_url": "https://sxodim.com/uploads/posts/2026/11/17/optimized/915254ddf0f89dae6dbbfc8ced0feaf2_760x427-q-85.jpg",
+   "image_large": "https://sxodim.com/uploads/posts/2026/11/17/optimized/915254ddf0f89dae6dbbfc8ced0feaf2_1400x790-q-85.jpg",
+   "source_url": "https://sxodim.com/astana/event/gitarnyy-vecher-vo-vnutri-knigi",
+   "ticket_url": "https://sxodim.com/astana/kontserty/gitarnyy-vecher-vo-vnutri-knigi/tickets",
+   "source_name": "Sxodim",
+   "short_description": "Гитарный вечер в помещении \"Внутри Книги\"! Теплый и живой звук, любимые кавера и атмосфера, в которой хочется остаться подольше!",
+   "image_small": "https://sxodim.com/uploads/posts/2026/11/17/optimized/915254ddf0f89dae6dbbfc8ced0feaf2_352x198-q-85.jpg",
+   "image_thumb": "https://sxodim.com/uploads/posts/2026/11/17/optimized/915254ddf0f89dae6dbbfc8ced0feaf2_80x80-q-85.jpg"
+  },
+  {
    "id": "sx_77995",
    "title": "Жұлдызай Дүйсенбиеваның жеке әзіл кеші (22 қараша 16:00)",
    "category": "events",
@@ -1175,6 +1197,28 @@
    "short_description": "Экспозиция предлагает зрителям познакомиться с ключевыми произведениями мастера, исследовать их многослойную символику и рассмотреть детали, которые часто остаются незамеченными при традиционном восприятии живописи.",
    "image_small": "https://sxodim.com/uploads/posts/2026/10/22/optimized/ee17d4276e8f8f3899784ac846de200e_352x198-q-85.jpg",
    "image_thumb": "https://sxodim.com/uploads/posts/2026/10/22/optimized/ee17d4276e8f8f3899784ac846de200e_80x80-q-85.jpg"
+  },
+  {
+   "id": "sx_78267",
+   "title": "Концерт класса заслуженного деятеля РК профессора — Сары Шакировны Асабаевой",
+   "category": "concerts",
+   "category_label": "Концерты и звёзды",
+   "date": "2026-11-24",
+   "end_date": null,
+   "time": "19:00",
+   "venue": "Onergy hub, Кабанбай батыр проспект",
+   "address": "53, блок 32",
+   "price_from": 3000,
+   "price_label": "от 3 000 ₸",
+   "is_free": false,
+   "image_url": "https://sxodim.com/uploads/posts/2026/11/17/optimized/e3b33f94d8ecfb9cc97b5b828faf4b1f_760x427-q-85.jpg",
+   "image_large": "https://sxodim.com/uploads/posts/2026/11/17/optimized/e3b33f94d8ecfb9cc97b5b828faf4b1f_1400x790-q-85.jpg",
+   "source_url": "https://sxodim.com/astana/event/koncert-klassa-zasluzhennogo-deyatelya-rk-professora-sary-shakirovny-asabaevoy",
+   "ticket_url": "https://sxodim.com/astana/kontserty/koncert-klassa-zasluzhennogo-deyatelya-rk-professora-sary-shakirovny-asabaevoy/tickets",
+   "source_name": "Sxodim",
+   "short_description": "Музыка способна говорить о самом сокровенном — о бурях человеческой души, неукротимой энергии движения, драматических изломах судьбы и торжестве света над тьмой. В этот вечер сцена превратится в пространство, где оживают грандиозные философские замыслы, революционные страсти, монументальная виртуозность и завораживающие сказочные образы.",
+   "image_small": "https://sxodim.com/uploads/posts/2026/11/17/optimized/e3b33f94d8ecfb9cc97b5b828faf4b1f_352x198-q-85.jpg",
+   "image_thumb": "https://sxodim.com/uploads/posts/2026/11/17/optimized/e3b33f94d8ecfb9cc97b5b828faf4b1f_80x80-q-85.jpg"
   },
   {
    "id": "sx_78250",
