@@ -1,16 +1,16 @@
 {
- "updated_at": "2026-11-25T03:27:11+05:00",
- "count": 96,
+ "updated_at": "2026-11-25T13:34:21+05:00",
+ "count": 101,
  "sources": {
   "ticketon": {
    "ok": false,
    "count": 0,
-   "seconds": 0.2
+   "seconds": 0.4
   },
   "sxodim": {
    "ok": true,
-   "count": 96,
-   "seconds": 28.4
+   "count": 101,
+   "seconds": 29.9
   }
  },
  "window": {
